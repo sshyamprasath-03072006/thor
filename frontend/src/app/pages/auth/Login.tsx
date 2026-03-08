@@ -33,29 +33,6 @@ export default function Login() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.detail || "Login failed");
 
-            // --- STRICT PERMISSION ENFORCEMENT ---
-            try {
-                if (!("geolocation" in navigator)) throw new Error("Geolocation not supported by this browser.");
-
-                await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(
-                        resolve,
-                        () => reject(new Error("Location permission denied. THOR requires GPS access.")),
-                        { enableHighAccuracy: true }
-                    );
-                });
-
-                if ("Notification" in window) {
-                    const perm = await Notification.requestPermission();
-                    if (perm === "denied") {
-                        throw new Error("Notification permission denied. THOR requires Alerts to keep you safe.");
-                    }
-                }
-            } catch (permError: any) {
-                throw new Error(`Permission Denied: ${permError.message}`);
-            }
-            // ------------------------------------
-
             login(data.access_token, data.user);
             navigate("/dashboard");
         } catch (err: any) {

@@ -102,22 +102,29 @@ async def login(data: UserLogin):
     users = get_users_collection()
     user = await users.find_one({"email": data.email})
 
+    now = datetime.now(timezone.utc).isoformat()
+
     if not user:
-        # Try SQLite offline fallback
-        offline_user = await sqlite_get_user_by_email(data.email)
-        if not offline_user:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-        if not verify_password(data.password, offline_user["password"]):
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-        user_id = offline_user["id"]
-        name = offline_user["name"]
-        email = offline_user["email"]
+        # --- DEMO MODE: Auto-register unknown users seamlessly ---
+        hashed = hash_password(data.password)
+        name_from_email = data.email.split("@")[0].replace(".", " ").replace("_", " ").title()
+        user_doc = {
+            "name": name_from_email,
+            "email": data.email,
+            "hashed_password": hashed,
+            "medical_details": {},
+            "emergency_contacts": [],
+            "created_at": now,
+        }
+        result = await users.insert_one(user_doc)
+        user_id = str(result.inserted_id)
+        name = name_from_email
+        email = data.email
         medical = {}
         emergency = []
-        created_at = offline_user.get("created_at", "")
+        created_at = now
     else:
-        if not verify_password(data.password, user["hashed_password"]):
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+        # --- DEMO MODE: Accept any password for existing users ---
         user_id = str(user["_id"])
         name = user["name"]
         email = user["email"]
