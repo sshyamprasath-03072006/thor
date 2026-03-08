@@ -6,11 +6,12 @@ from pydantic import BaseModel
 from typing import Optional
 from routers.auth import get_current_user
 from dotenv import load_dotenv
-from google import genai
+import google.generativeai as genai
 import httpx
 
-MODEL = "gemini-3.1-flash-lite-preview"
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+load_dotenv()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+MODEL = "gemini-1.5-flash"
 
 router = APIRouter()
 
@@ -70,10 +71,8 @@ async def generate_trip_plan(req: TripRequest, current_user=Depends(get_current_
     """
 
     try:
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=prompt,
-        )
+        model = genai.GenerativeModel(MODEL)
+        response = model.generate_content(prompt)
         json_str = clean_json(response.text)
         data = json.loads(json_str)
         return {"status": "success", "plan": data}
