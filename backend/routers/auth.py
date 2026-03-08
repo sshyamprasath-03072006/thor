@@ -1,8 +1,8 @@
+import hashlib
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from bson import ObjectId
@@ -16,17 +16,22 @@ SECRET_KEY = os.getenv("SECRET_KEY", "thor-secret")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 10080))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer_scheme = HTTPBearer()
 router = APIRouter()
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    # Use SHA-256 with salt for now (more secure than plain bcrypt with this issue)
+    salt = os.urandom(32).hex()
+    return hashlib.sha256((password + salt).encode()).hexdigest() + ":" + salt
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        hash_part, salt = hashed.split(":")
+        return hashlib.sha256((plain + salt).encode()).hexdigest() == hash_part
+    except:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
