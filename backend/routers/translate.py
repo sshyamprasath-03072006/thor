@@ -11,7 +11,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 # We are currently defaulting to the user's requested model
-MODEL_NAME = "gemini-1.5-flash"
+MODEL_NAME = "gemini-3.1-flash-lite-preview"
 
 class TranslationRequest(BaseModel):
     text: str

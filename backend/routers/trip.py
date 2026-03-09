@@ -11,7 +11,7 @@ import httpx
 
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.1-flash-lite-preview"
 
 router = APIRouter()
 
@@ -149,7 +149,7 @@ async def chat_with_ai(req: ChatRequest):
         formatted_history.append({"role": role, "parts": [h["content"]]})
 
     try:
-        model = genai.GenerativeModel(MODEL_NAME if 'MODEL_NAME' in globals() else "gemini-3.1-flash-lite-preview", system_instruction=sys_prompt)
+        model = genai.GenerativeModel(MODEL, system_instruction=sys_prompt)
         chat = model.start_chat(history=formatted_history)
         response = chat.send_message(req.message)
         return {"reply": response.text}
