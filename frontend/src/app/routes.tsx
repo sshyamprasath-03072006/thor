@@ -20,6 +20,9 @@ import VoiceAI from "./pages/tourist/VoiceAI";
 import Emergency from "./pages/tourist/Emergency";
 import Profile from "./pages/tourist/Profile";
 import SettingsPage from "./pages/Settings";
+import DownloadMapPage from "./pages/DownloadMapPage";
+import SOSPage from "./pages/SOSPage";
+import SOSSetupPage from "./pages/SOSSetupPage";
 
 // Enterprise pages
 import EnterpriseHome from './pages/enterprise/EnterpriseHome';
@@ -56,6 +59,9 @@ export const router = createBrowserRouter([
       { path: "/emergency", element: <Emergency /> },
       { path: "/profile", element: <Profile /> },
       { path: "/settings", element: <SettingsPage /> },
+      { path: "/offline-maps", element: <DownloadMapPage /> },
+      { path: "/sos", element: <SOSPage /> },
+      { path: "/sos-setup", element: <SOSSetupPage /> },
     ],
   },
 
