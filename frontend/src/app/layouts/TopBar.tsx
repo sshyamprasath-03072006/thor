@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell, User, LogOut, ChevronDown, Settings, Zap } from "lucide-react";
+import { Bell, User, LogOut, ChevronDown, Settings, Zap, Map } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
@@ -64,6 +64,7 @@ export default function TopBar() {
                             <div className="py-1">
                                 {[
                                     { icon: User, label: "Profile", action: () => navigate("/profile") },
+                                    { icon: Map, label: "Offline Maps", action: () => navigate("/offline-maps") },
                                     { icon: Settings, label: "Settings", action: () => navigate("/settings") },
                                 ].map((item) => {
                                     const Icon = item.icon;

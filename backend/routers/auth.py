@@ -98,72 +98,44 @@ async def register(data: UserRegister):
 
     users = get_users_collection()
 
-
-
     # Check duplicate email
-
-    existing = await users.find_one({"email": data.email})
-
+    try:
+        existing = await users.find_one({"email": data.email})
+    except:
+        existing = await sqlite_get_user_by_email(data.email)
+        
     if existing:
-
         raise HTTPException(status_code=400, detail="Email already registered")
 
-
-
     hashed = hash_password(data.password)
-
     now = datetime.now(timezone.utc).isoformat()
 
-
-
     user_doc = {
-
         "name": data.name,
-
         "email": data.email,
-
         "hashed_password": hashed,
-
         "medical_details": data.medical_details.model_dump() if data.medical_details else {},
-
         "emergency_contacts": [e.model_dump() for e in data.emergency_contacts] if data.emergency_contacts else [],
-
         "created_at": now,
-
     }
 
-
-
-    result = await users.insert_one(user_doc)
-
-    user_id = str(result.inserted_id)
-
-
-
-    # Mirror to SQLite for offline access
-
-    await sqlite_upsert_user({**user_doc, "id": user_id})
-
-
+    # Try MongoDB first, fallback to SQLite
+    try:
+        result = await users.insert_one(user_doc)
+        user_id = str(result.inserted_id)
+    except:
+        user_id = f"sqlite_{int(datetime.now().timestamp())}"
+        await sqlite_upsert_user({**user_doc, "id": user_id})
 
     token = create_access_token({"sub": user_id})
-
     user_response = UserResponse(
-
         id=user_id,
-
         name=data.name,
-
         email=data.email,
-
         medical_details=user_doc["medical_details"],
-
         emergency_contacts=user_doc["emergency_contacts"],
-
         created_at=now,
-
     )
-
     return Token(access_token=token, token_type="bearer", user=user_response)
 
 
@@ -175,14 +147,15 @@ async def register(data: UserRegister):
 async def login(data: UserLogin):
 
     users = get_users_collection()
-
-    user = await users.find_one({"email": data.email})
-
-
+    user = None
+    
+    # Try MongoDB first, fallback to SQLite
+    try:
+        user = await users.find_one({"email": data.email})
+    except:
+        user = await sqlite_get_user_by_email(data.email)
 
     now = datetime.now(timezone.utc).isoformat()
-
-
 
     if not user:
 
@@ -208,9 +181,13 @@ async def login(data: UserLogin):
 
         }
 
-        result = await users.insert_one(user_doc)
-
-        user_id = str(result.inserted_id)
+        # Try MongoDB first, fallback to SQLite
+        try:
+            result = await users.insert_one(user_doc)
+            user_id = str(result.inserted_id)
+        except:
+            user_id = f"sqlite_{int(datetime.now().timestamp())}"
+            await sqlite_upsert_user({**user_doc, "id": user_id})
 
         name = name_from_email
 
@@ -226,7 +203,7 @@ async def login(data: UserLogin):
 
         # --- DEMO MODE: Accept any password for existing users ---
 
-        user_id = str(user["_id"])
+        user_id = str(user["_id"]) if "_id" in user else user.get("id", "unknown")
 
         name = user["name"]
 
@@ -237,8 +214,6 @@ async def login(data: UserLogin):
         emergency = user.get("emergency_contacts", [])
 
         created_at = user.get("created_at", "")
-
-
 
     token = create_access_token({"sub": user_id})
 

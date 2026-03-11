@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
-import { MapPin, Calendar, Plus, ChevronRight, Zap, Target } from "lucide-react";
+import { MapPin, Calendar, Plus, ChevronRight, Zap, Target, ShieldAlert, Check, X, Bell, Database, Radio } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "../../context/TranslationContext";
-import { Check, X, ShieldAlert } from "lucide-react";
-
 import { API_URL } from "../../config/api";
+
+// Phase 2 feature imports
+import { seedRiskZones, seedZones } from "../../data/seedRiskZones";
+import { geofenceEngine } from "../../services/GeofenceEngine";
+import { alertService } from "../../services/AlertService";
+import { riskZoneSyncService } from "../../services/RiskZoneSyncService";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -118,6 +122,61 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Offline Safety & Risk Zones (Phase 2 Test Controls) */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold tracking-tight flex items-center gap-2" style={{ color: "var(--thor-text)" }}>
+          <ShieldAlert className="w-5 h-5 text-yellow-500" /> {translate("Offline Safety Engine")}
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Seed Data */}
+          <button
+            onClick={async () => {
+              await seedRiskZones();
+              alert("Local IndexedDB populated with 50 risk zones across 5 cities!");
+            }}
+            className="flex flex-col items-center justify-center p-4 rounded-2xl border transition-colors hover:bg-zinc-800"
+            style={{ background: "var(--thor-surface-3)", borderColor: "var(--thor-border)" }}
+          >
+            <Database className="w-6 h-6 text-blue-400 mb-2" />
+            <span className="text-sm font-semibold" style={{ color: "var(--thor-text)" }}>1. Init Local DB</span>
+          </button>
+
+          {/* Start Monitoring */}
+          <button
+            onClick={async () => {
+              const granted = await alertService.requestPermission();
+              if (granted) {
+                geofenceEngine.startMonitoring(user?.id || 'TEST-USER', 'chennai');
+                riskZoneSyncService.startListening('chennai');
+                alert("Geofence tracking started! Listening for background GPS & connection drops.");
+              } else {
+                alert("Please grant notification permissions so we can alert you of risks.");
+              }
+            }}
+            className="flex flex-col items-center justify-center p-4 rounded-2xl border transition-colors hover:bg-zinc-800"
+            style={{ background: "var(--thor-surface-3)", borderColor: "var(--thor-border)" }}
+          >
+            <Radio className="w-6 h-6 text-green-400 mb-2" />
+            <span className="text-sm font-semibold" style={{ color: "var(--thor-text)" }}>2. Start Engine</span>
+          </button>
+
+          {/* Simulate Alert */}
+          <button
+            onClick={() => {
+              // Simulate a critical risk zone alert
+              const demoZone = seedZones.find(z => z.risk_level === 'critical') || seedZones[0];
+              alertService.sendRiskAlert(demoZone, 0.95);
+            }}
+            className="flex flex-col items-center justify-center p-4 rounded-2xl border transition-colors hover:bg-red-900/40"
+            style={{ background: "var(--thor-surface-3)", borderColor: "var(--thor-border)" }}
+          >
+            <Bell className="w-6 h-6 text-red-500 mb-2" />
+            <span className="text-sm font-semibold" style={{ color: "var(--thor-text)" }}>3. Simulate Alert</span>
+          </button>
+        </div>
+      </div>
 
       {/* Active Plans List */}
       <div>
